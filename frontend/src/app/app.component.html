@@ -1,0 +1,57 @@
+@if (!user()) {
+  <main class="login-wrap">
+    <section class="login-card" aria-labelledby="login-title">
+      <div class="brand-mark" aria-hidden="true">OP</div>
+      <p class="eyebrow">INFRASTRUCTURE CAPACITY</p>
+      <h1 id="login-title">Welcome to OpsPilot</h1>
+      <p class="muted">{{ registering ? 'Create a read-only account to explore the platform.' : 'Sign in to review capacity and manage your sites.' }}</p>
+      @if (error) { <p class="alert" role="alert">{{ error }}</p> }
+      <form (ngSubmit)="login()">
+        <label for="email">Email</label><input id="email" name="email" type="email" [(ngModel)]="email" required autocomplete="username">
+        <label for="password">Password</label><input id="password" name="password" type="password" [(ngModel)]="password" required autocomplete="current-password">
+        <button class="primary full" type="submit" [disabled]="busy()">{{ busy() ? 'Please wait…' : registering ? 'Create account' : 'Sign in' }}</button>
+      </form>
+      <div class="demo-actions"><button type="button" (click)="useDemo('approver')">Use demo approver</button><button type="button" (click)="useDemo('engineer')">Use demo engineer</button></div><button class="text-button" type="button" (click)="toggleRegistration()">{{ registering ? 'Back to sign in' : 'Create a read-only account' }}</button><p class="demo-hint">Demo passwords are shown in the project README.</p>
+    </section>
+  </main>
+} @else {
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark small">OP</span><span><strong>OpsPilot</strong><small>CAPACITY CONSOLE</small></span></div>
+      <nav aria-label="Main navigation">
+        <button [class.active]="page === 'overview'" (click)="page='overview'">▦ <span>Overview</span></button>
+        <button [class.active]="page === 'inventory'" (click)="page='inventory'">◫ <span>Inventory</span></button>
+        <button [class.active]="page === 'requests'" (click)="page='requests'">⇧ <span>Requests</span></button>
+        @if (user()?.role === 'approver') { <button [class.active]="page === 'approvals'" (click)="page='approvals'">✓ <span>Approvals</span><b class="nav-count">{{ approvals.length }}</b></button> }
+      </nav>
+      <div class="sidebar-foot"><span class="online-dot"></span> System connected</div>
+    </aside>
+    <main class="main-area">
+      <header class="topbar"><div><p class="eyebrow">OPS / CAPACITY</p><h1>{{ page === 'overview' ? 'Overview' : page === 'inventory' ? 'Infrastructure inventory' : page === 'requests' ? 'Capacity requests' : 'Approval queue' }}</h1></div><div class="profile"><div class="avatar">{{ user()?.email?.slice(0,1)?.toUpperCase() }}</div><span><strong>{{ user()?.email }}</strong><small>{{ user()?.role }}</small></span><button class="quiet" (click)="logout()">Sign out</button></div></header>
+      @if (error) { <p class="alert" role="alert">{{ error }}</p> } @if (notice) { <p class="notice" role="status">{{ notice }}</p> }
+      @if (page === 'overview') {
+        <section class="welcome"><div><p class="eyebrow light">CAPACITY OPERATIONS</p><h2>Your infrastructure, at a glance.</h2><p>Track available space and review placement decisions in one place.</p></div><div class="welcome-icon" aria-hidden="true">⌁</div></section>
+        <section class="stat-grid" aria-label="Capacity summary"><article class="stat-card"><span class="stat-icon blue">◫</span><p>Sites</p><strong>{{ sites.length }}</strong><small>Active locations</small></article><article class="stat-card"><span class="stat-icon violet">▤</span><p>Racks</p><strong>{{ racks.length }}</strong><small>Across all sites</small></article><article class="stat-card"><span class="stat-icon amber">⇧</span><p>Open requests</p><strong>{{ requests.length }}</strong><small>Capacity requests</small></article><article class="stat-card"><span class="stat-icon green">✓</span><p>Awaiting review</p><strong>{{ approvals.length }}</strong><small>Human decision required</small></article></section>
+        <section class="panel"><div class="panel-head"><div><h2>Site capacity</h2><p>Rack slot utilization by location</p></div><button class="secondary" (click)="page='inventory'">View inventory →</button></div>
+          @if (!sites.length) { <div class="empty"><strong>No sites yet</strong><span>Add a site in Inventory to get started.</span><button class="primary" (click)="page='inventory'">Add first site</button></div> }
+          @for (site of sites; track site.id) { <div class="site-row"><div class="site-badge">{{ site.city.slice(0,2).toUpperCase() }}</div><div class="site-info"><strong>{{ site.name }}</strong><span>{{ site.city }}</span></div><div class="capacity-bar"><div><span>{{ usedFor(site.id) }} / {{ totalFor(site.id) }} slots</span><span>{{ percentFor(site.id) }}%</span></div><div class="track"><i [style.width.%]="percentFor(site.id)"></i></div></div></div> }
+        </section>
+      }
+      @if (page === 'inventory') {
+        <section class="stat-grid compact"><article class="stat-card"><p>Sites</p><strong>{{ sites.length }}</strong><small>Locations</small></article><article class="stat-card"><p>Racks</p><strong>{{ racks.length }}</strong><small>Installed racks</small></article><article class="stat-card"><p>Total slots</p><strong>{{ totalSlots() }}</strong><small>{{ usedSlots() }} currently occupied</small></article></section>
+        @if (user()?.role !== 'viewer') { <div class="form-grid"><form class="panel form-panel" (ngSubmit)="createSite()"><h2>Add a site</h2><label for="site-name">Site name</label><input id="site-name" name="siteName" [(ngModel)]="siteName" required placeholder="Hyderabad DC 1"><label for="city">City</label><input id="city" name="city" [(ngModel)]="city" required placeholder="Hyderabad"><label for="capacity">Planned total capacity</label><input id="capacity" name="capacity" type="number" min="1" [(ngModel)]="totalCapacity" required><button class="primary" [disabled]="busy()">Add site</button></form><form class="panel form-panel" (ngSubmit)="createRack()"><h2>Add a rack</h2><label for="rack-site">Site</label><select id="rack-site" name="rackSite" [(ngModel)]="rackSiteId" required><option [ngValue]="0" disabled>Select site</option>@for (site of sites; track site.id) { <option [ngValue]="site.id">{{ site.name }}</option> }</select><label for="rack-name">Rack name</label><input id="rack-name" name="rackName" [(ngModel)]="rackName" required placeholder="R-01"><label for="rack-slots">Server slots</label><input id="rack-slots" name="rackSlots" type="number" min="1" [(ngModel)]="rackSlots" required><button class="primary" [disabled]="busy() || !sites.length">Add rack</button></form></div> }
+        <section class="panel"><div class="panel-head"><div><h2>Racks</h2><p>Capacity and current occupancy</p></div></div>@if (!racks.length) { <div class="empty"><strong>No racks to show</strong><span>Add a rack to start tracking available server capacity.</span></div> } @else { <div class="table-wrap"><table><thead><tr><th>RACK</th><th>SITE</th><th>USED</th><th>AVAILABLE</th><th>UTILIZATION</th></tr></thead><tbody>@for (rack of racks; track rack.id) { <tr><td><strong>{{ rack.name }}</strong></td><td>{{ siteNameFor(rack.site_id) }}</td><td>{{ rack.used_slots }}</td><td>{{ rack.total_slots - rack.used_slots }}</td><td><div class="mini-track"><i [style.width.%]="rack.total_slots ? 100*rack.used_slots/rack.total_slots : 0"></i></div></td></tr> }</tbody></table></div> }</section>
+      }
+      @if (page === 'requests') {
+        @if (user()?.role !== 'viewer') { <form class="panel request-form" (ngSubmit)="createRequest()"><div><h2>New capacity request</h2><p>Tell us what capacity you need. The agent can suggest a placement.</p></div><div class="request-fields"><label for="request-site">Site<select id="request-site" name="requestSite" [(ngModel)]="requestSiteId" required>@for (site of sites; track site.id) { <option [ngValue]="site.id">{{ site.name }}</option> }</select></label><label for="quantity">Servers needed<input id="quantity" name="quantity" type="number" min="1" [(ngModel)]="quantity" required></label><label for="description">Description<input id="description" name="description" [(ngModel)]="description" placeholder="Add a workload or project note"></label><button class="primary" [disabled]="busy() || !sites.length">Submit request</button></div></form> }
+        <section class="panel"><div class="panel-head"><div><h2>All requests</h2><p>Placement proposals require human approval before inventory changes.</p></div></div>@if (!requests.length) { <div class="empty"><strong>No requests yet</strong><span>Capacity requests will appear here.</span></div> } @else { <div class="table-wrap"><table><thead><tr><th>REQUEST</th><th>SITE</th><th>SERVERS</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>@for (item of requests; track item.id) { <tr><td><strong>#{{ item.id }}</strong><small class="cell-sub">{{ item.description || 'Capacity request' }}</small></td><td>{{ siteNameFor(item.site_id) }}</td><td>{{ item.quantity }}</td><td><span class="pill" [class]="'pill '+item.status.toLowerCase()">{{ item.status }}</span></td><td>@if (item.status === 'PENDING' && user()?.role !== 'viewer') { <button class="secondary small-button" (click)="propose(item)" [disabled]="busy()">Suggest placement</button> }</td></tr> }</tbody></table></div> }</section>
+      }
+      @if (page === 'approvals') {
+        <section class="approval-intro"><span class="stat-icon violet">✓</span><div><strong>Human review is required</strong><p>Approving a proposal creates the servers and updates rack capacity. Rejection makes no inventory changes.</p></div></section>
+        @if (!approvals.length) { <section class="panel empty"><strong>All caught up</strong><span>There are no proposals waiting for review.</span></section> }
+        @for (item of approvals; track item.id) { <article class="panel approval-card"><div class="approval-top"><div><span class="pill pending">PENDING REVIEW</span><h2>Request #{{ item.request_id }}</h2><p>{{ requestDescription(item.request_id) }}</p></div><span class="ai-tag">✦ Agent proposal</span></div><div class="proposal-summary">{{ item.proposal_json.summary }}</div><div class="allocations"><strong>Proposed placement</strong>@for (allocation of item.proposal_json.allocations; track allocation.rack_id) { <div><span>Rack {{ allocation.rack_id }}</span><strong>{{ allocation.quantity }} servers</strong></div> }</div><div class="review-actions"><button class="secondary reject" (click)="review(item, 'reject')" [disabled]="busy()">Reject</button><button class="primary" (click)="review(item, 'approve')" [disabled]="busy()">Approve and place servers</button></div></article> }
+      }
+      <footer>OpsPilot · Human-approved infrastructure operations</footer>
+    </main>
+  </div>
+}
