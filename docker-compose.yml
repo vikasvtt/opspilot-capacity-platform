@@ -1,0 +1,71 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: opspilot
+      POSTGRES_USER: opspilot
+      POSTGRES_PASSWORD: opspilot
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opspilot -d opspilot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      OPSPILOT_DATABASE_URL: postgresql+psycopg://opspilot:opspilot@db:5432/opspilot
+      OPSPILOT_JWT_SECRET: local-only-change-before-deploying
+      OPSPILOT_BOOTSTRAP_APPROVER_EMAIL: approver@opspilot-demo.com
+      OPSPILOT_BOOTSTRAP_APPROVER_PASSWORD: LocalDev123!
+      OPSPILOT_BOOTSTRAP_ENGINEER_EMAIL: engineer@opspilot-demo.com
+      OPSPILOT_BOOTSTRAP_ENGINEER_PASSWORD: Engineer123!
+      OPSPILOT_GEMINI_API_KEY: ${OPSPILOT_GEMINI_API_KEY:-}
+      OPSPILOT_GEMINI_MODEL: gemini-3.8-flash
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log"
+
+  prometheus:
+    build:
+      context: ./monitoring
+      dockerfile: Dockerfile.prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  grafana:
+    build: ./monitoring/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: opspilot-local
+    depends_on:
+      - prometheus
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

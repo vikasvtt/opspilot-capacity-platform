@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: opspilot
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: OPSPILOT_DATABASE_URL
+        fromDatabase:
+          name: opspilot-db
+          property: connectionString
+      - key: OPSPILOT_JWT_SECRET
+        generateValue: true
+      - key: OPSPILOT_BOOTSTRAP_APPROVER_EMAIL
+        value: approver@opspilot-demo.com
+      - key: OPSPILOT_BOOTSTRAP_APPROVER_PASSWORD
+        value: LocalDev123!
+      - key: OPSPILOT_BOOTSTRAP_ENGINEER_EMAIL
+        value: engineer@opspilot-demo.com
+      - key: OPSPILOT_BOOTSTRAP_ENGINEER_PASSWORD
+        value: Engineer123!
+      - key: OPSPILOT_GEMINI_MODEL
+        value: gemini-3.8-flash
+      - key: OPSPILOT_GEMINI_API_KEY
+        sync: false
+
+databases:
+  - name: opspilot-db
+    plan: free
+    region: singapore
+    databaseName: opspilot
+    user: opspilot
+    postgresMajorVersion: "16"
