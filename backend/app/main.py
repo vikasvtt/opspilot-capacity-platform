@@ -58,8 +58,8 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
     root_path="/api",
-    docs_url="/api/docs",
-    openapi_url="/api/openapi.json",
+    docs_url="/docs",
+    openapi_url="/openapi.json",
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
