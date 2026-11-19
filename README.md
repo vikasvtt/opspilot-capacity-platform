@@ -32,6 +32,13 @@ The included `render.yaml` deploys the web app and PostgreSQL database to Render
 
 This is a shared demo with public demo credentials. Use sample data only; do not put real company or personal data in it. The optional Gemini key can be left blank.
 
+### Live portfolio links
+
+- **App:** [opspilot-ps15.onrender.com](https://opspilot-ps15.onrender.com)
+- **Interactive API docs:** [FastAPI Swagger UI](https://opspilot-ps15.onrender.com/api/docs)
+- **OpenAPI schema:** [JSON schema](https://opspilot-ps15.onrender.com/api/openapi.json)
+- **Health check:** [API health](https://opspilot-ps15.onrender.com/health)
+
 ## Local demo accounts
 
 - **Approver:** `approver@opspilot-demo.com` / `LocalDev123!`
@@ -55,8 +62,9 @@ The demo accounts and secrets in Compose are for local development only. Replace
 | Service | Address | Purpose |
 |---|---|---|
 | Angular web app | [localhost:4200](http://localhost:4200) | Inventory, request, and approval screens |
-| FastAPI | [localhost:8000/docs](http://localhost:8000/docs) | API and interactive OpenAPI docs |
-| Health | [localhost:8000/health](http://localhost:8000/health) | API health check |
+| FastAPI | [localhost:4200/api/docs](http://localhost:4200/api/docs) | API and interactive OpenAPI docs |
+| OpenAPI schema | [localhost:4200/api/openapi.json](http://localhost:4200/api/openapi.json) | API schema in JSON format |
+| Health | [localhost:4200/health](http://localhost:4200/health) | API health check |
 | Prometheus | [localhost:9090](http://localhost:9090) | Scraped application metrics |
 | Grafana | [localhost:3000](http://localhost:3000) | OpsPilot operations dashboard |
 
