@@ -22,6 +22,8 @@ services:
         value: engineer@opspilot-demo.com
       - key: OPSPILOT_BOOTSTRAP_ENGINEER_PASSWORD
         value: Engineer123!
+      - key: OPSPILOT_SEED_DEMO
+        value: "true"
       - key: OPSPILOT_GEMINI_MODEL
         value: gemini-3.8-flash
       - key: OPSPILOT_GEMINI_API_KEY
