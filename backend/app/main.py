@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.entities import User, UserRole
+from app.services.demo_seed import seed_demo_data
 
 configure_logging()
 logger = logging.getLogger("opspilot.http")
@@ -34,10 +35,32 @@ async def lifespan(_app: FastAPI):
             if email and password and db.query(User).filter(User.email == email.lower()).first() is None:
                 db.add(User(email=email.lower(), password_hash=hash_password(password), role=role))
         db.commit()
+        if settings.seed_demo and all((
+            settings.bootstrap_approver_email,
+            settings.bootstrap_approver_password,
+            settings.bootstrap_engineer_email,
+            settings.bootstrap_engineer_password,
+        )):
+            seed_demo_data(
+                db,
+                approver_email=settings.bootstrap_approver_email,
+                approver_password=settings.bootstrap_approver_password,
+                engineer_email=settings.bootstrap_engineer_email,
+                engineer_password=settings.bootstrap_engineer_password,
+            )
+        elif settings.seed_demo:
+            logger.warning("Demo seeding requested but bootstrap engineer/approver credentials are incomplete")
     yield
 
 
-app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title=settings.app_name,
+    version="0.1.0",
+    lifespan=lifespan,
+    root_path="/api",
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json",
+)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
