@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     bootstrap_approver_password: str | None = None
     bootstrap_engineer_email: str | None = None
     bootstrap_engineer_password: str | None = None
+    seed_demo: bool = False
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-3.8-flash"
 
